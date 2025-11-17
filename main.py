@@ -7,9 +7,8 @@ import os
 
 app = FastAPI()
 
-# URL del modelo en Google Drive (reemplaza con tu ID)
-MODEL_URL = "https://drive.google.com/uc?id=1MfuAswEbVGrkAfH2KvWuOPEGf1FrYqq4"  # Cambia TU_ID_AQUI
-MODEL_PATH = "mejor_modelo_optimizado.pkl"
+MODEL_URL = "https://drive.google.com/uc?id=198OGyKHW7IOrxC79IqaZnvaNPe2ll0Cv"
+MODEL_PATH = "mejor_modelo_optimizado_gb.pkl"
 
 # Descargar modelo si no existe
 if not os.path.exists(MODEL_PATH):
