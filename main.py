@@ -70,34 +70,38 @@ CAPITALES = [
 ]
 
 
-def calcular_features_temporales(fecha: str):
-    """Calcula las features temporales a partir de una fecha YYYY-MM-DD"""
-    dt = datetime.strptime(fecha, "%Y-%m-%d")
-
-    dia_del_anio = dt.timetuple().tm_yday
-    semana_del_anio = dt.isocalendar()[1]
-
-    dias = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    dia_semana = dias[dt.weekday()]
-
+def calcular_features_temporales(fecha_str):
+    fecha = datetime.strptime(fecha_str, "%Y-%m-%d")
+    
+    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    dias_semana_cortos = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+    meses = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    
+    dia_semana_num = fecha.weekday()
+    dia_semana_nombre = dias_semana[dia_semana_num]
+    dia_semana_corto = dias_semana_cortos[dia_semana_num]
+    
+    semana_del_anio = fecha.isocalendar()[1]
+    dia_del_anio = fecha.timetuple().tm_yday
+    
     semana_sin = np.sin(2 * np.pi * semana_del_anio / 52)
     semana_cos = np.cos(2 * np.pi * semana_del_anio / 52)
     dia_sin = np.sin(2 * np.pi * dia_del_anio / 365)
     dia_cos = np.cos(2 * np.pi * dia_del_anio / 365)
-
-    dias_es = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-    dia_semana_es = dias_es[dt.weekday()]
-
+    
+    fecha_formateada = f"{dia_semana_corto} {fecha.day} {meses[fecha.month]}"
+    
     return {
-        "anio": dt.year,
-        "dia_semana": dia_semana,
-        "dia_semana_es": dia_semana_es,
+        "anio": fecha.year,
         "semana_sin": semana_sin,
         "semana_cos": semana_cos,
         "dia_sin": dia_sin,
         "dia_cos": dia_cos,
-        "fecha_formateada": dt.strftime("%d/%m/%Y"),
-        "fecha_corta": dt.strftime("%d.%m.%Y"),
+        "dia_semana": dia_semana_num,
+        "dia_semana_es": dia_semana_nombre,
+        "dia_semana_corto": dia_semana_corto,
+        "fecha_formateada": fecha_formateada,
+        "fecha_corta": f"{fecha.day} {meses[fecha.month]}",
     }
 
 
@@ -521,7 +525,6 @@ def predecir(
         )
 
     promedio = sum(p["prediccion"] for p in predicciones) / len(predicciones)
-    ocupacion = min(100, int((promedio / 1000) * 100))
     precio_promedio = (PrecioMinimo + PrecioMaximo) / 2
     ingresos_estimados = int(promedio * precio_promedio)
 
@@ -531,8 +534,21 @@ def predecir(
     for p in predicciones:
         altura = (p["prediccion"] / max_valor) * 100 if max_valor > 0 else 0
         color = "#7e57c2" if p["es_fecha_seleccionada"] else "#b39ddb"
-        datos_grafico += f'<div class="bar" style="height: {altura}%; background: {color};" title="{p["prediccion"]:.0f} asistentes"></div>\n'
-        etiquetas_grafico += f'<div class="bar-label">{p["fecha_corta"]}</div>\n'
+        valor = int(p["prediccion"])
+
+        datos_grafico += f"""
+            <div class="bar-wrapper">
+                <div class="bar-value">{valor}</div>
+                <div class="bar" style="height: {altura}%; background: {color};"></div>
+            </div>
+        """
+
+        etiquetas_grafico += f"""
+            <div class="bar-label">
+                <strong>{p["dia_semana"][:3]}</strong><br>
+                {p["fecha_corta"]}
+            </div>
+        """
 
     opciones_departamentos = ""
     for dept in sorted(DEPARTAMENTOS_MUNICIPIOS.keys()):
@@ -751,42 +767,42 @@ def predecir(
                 border-radius: 12px;
                 padding: 25px;
             }}
-            
+
             .chart-header {{
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 margin-bottom: 20px;
             }}
-            
+
             .chart-title {{
                 font-size: 1.1em;
                 font-weight: 600;
                 color: #424242;
             }}
-            
+
             .chart-dates {{
                 display: flex;
                 gap: 15px;
                 font-size: 0.85em;
             }}
-            
+
             .date-badge {{
                 padding: 6px 12px;
                 border-radius: 6px;
                 font-weight: 500;
             }}
-            
+
             .date-badge.max {{
                 background: #e8f5e9;
                 color: #2e7d32;
             }}
-            
+
             .date-badge.min {{
                 background: #ffebee;
                 color: #c62828;
             }}
-            
+
             .chart-container {{
                 height: 250px;
                 display: flex;
@@ -798,34 +814,57 @@ def predecir(
                 background: white;
                 border-radius: 8px;
             }}
-            
-            .bar {{
+
+            .bar-wrapper {{
                 flex: 1;
                 max-width: 80px;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 6px;
+            }}
+
+            .bar-value {{
+                font-size: 0.8em;
+                color: #424242;
+                font-weight: 600;
+            }}
+
+            .bar {{
+                width: 100%;
                 border-radius: 8px 8px 0 0;
                 transition: all 0.3s;
                 cursor: pointer;
             }}
-            
+
             .bar:hover {{
-                opacity: 0.8;
-                transform: translateY(-5px);
+                opacity: 0.85;
+                transform: translateY(-4px);
             }}
-            
+
             .chart-labels {{
                 display: flex;
                 justify-content: space-around;
                 gap: 10px;
                 padding: 0 20px;
             }}
-            
+
             .bar-label {{
                 flex: 1;
                 max-width: 80px;
                 text-align: center;
-                font-size: 0.8em;
+                font-size: 0.75em;
                 color: #757575;
-                font-weight: 500;
+                font-weight: 400;
+                line-height: 1.3;
+            }}
+
+            .bar-label strong {{
+                color: #424242;
+                font-weight: 600;
+                font-size: 1.1em;
             }}
             
             @media (max-width: 1200px) {{
@@ -1011,7 +1050,7 @@ def predecir(
                     </div>
                 </div>
                 <div class="results-body">
-                    <div class="metrics-grid">
+                    <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
                         <div class="metric-card">
                             <div class="metric-icon">👥</div>
                             <div class="metric-value">{int(promedio)}</div>
@@ -1029,12 +1068,6 @@ def predecir(
                             <div class="metric-value">{int(min_pred)}</div>
                             <div class="metric-label">Menor Día</div>
                             <div class="metric-sublabel">{fecha_min}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-icon">💜</div>
-                            <div class="metric-value">{ocupacion}%</div>
-                            <div class="metric-label">Ocupación</div>
-                            <div class="metric-sublabel">Estimada</div>
                         </div>
                         <div class="metric-card">
                             <div class="metric-icon">💵</div>
