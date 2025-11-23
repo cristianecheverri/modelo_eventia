@@ -529,13 +529,16 @@ def predecir(
     ingresos_estimados = int(promedio * precio_promedio)
 
     max_valor = max(p["prediccion"] for p in predicciones) if predicciones else 1
+    min_valor = min(p["prediccion"] for p in predicciones) if predicciones else 0
+    rango = max_valor - min_valor if max_valor > min_valor else 1
     datos_grafico = ""
     etiquetas_grafico = ""
     for p in predicciones:
-        altura = (p["prediccion"] / max_valor) * 100 if max_valor > 0 else 0
+        pred = float(p["prediccion"])
+        altura_normalizada = ((pred - min_valor) / rango) if rango > 0 else 0.5
+        altura = 30 + (altura_normalizada * 70)
         color = "#7e57c2" if p["es_fecha_seleccionada"] else "#b39ddb"
-        valor = int(p["prediccion"])
-
+        valor = int(pred)
         datos_grafico += f"""
             <div class="bar-wrapper">
                 <div class="bar-value">{valor}</div>
